@@ -1,0 +1,14 @@
+#!/bin/bash
+
+until mysql -u${USER} -p${PASSWORD} -hmysql petclinic -e 'select * from vets;'
+do
+	sleep 5
+done
+
+cd /app/target
+java -jar spring-petclinic-${VERSION}.BUILD-SNAPSHOT.jar
+
+#while :
+#do
+#	sleep 600
+#done

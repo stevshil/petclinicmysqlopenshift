@@ -1,0 +1,30 @@
+version: '3.0'
+
+services:
+  mysql:
+    container_name: mysql
+    build:
+      context: .
+      dockerfile: Dockerfile-mysql
+    image: petclinic/mysql:1.0.0
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=petclinic
+      - MYSQL_DATABASE=petclinic
+        #volumes:
+            #    - "./conf.d:/etc/mysql/conf.d:ro"
+            #- "./mysql:/var/lib/mysql"
+
+  petclinic:
+    container_name: petclinic
+    build:
+      context: .
+      dockerfile: Dockerfile-petclinic
+    image: petclinic/petclinic:1.0.0
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
