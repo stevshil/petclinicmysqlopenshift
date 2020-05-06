@@ -1,0 +1,140 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  name: pipeline
+spec:
+  strategy:
+    jenkinsPipelineStrategy:
+      env:
+        - name: PROJECTNAME
+          description: Name of the project in OpenShift
+        - name: DOMAINNAME
+          description: The domain name of the OpenShift server
+          value: yourdomain.local
+        - name: GITREPO
+          description: Git repository URL for the Pet Clinic project
+          value: https://bitbucket.org/stevshil/petclinicmysqlopenshift
+        - name: BRANCH
+          description: The branch name to use for the environment
+          value: master
+        - name: BUILDDB
+          description: Whether you want to include the Database as part of the build (true for the first build)
+          value: "false"
+        - name: MYSQLROOTPW
+          description: Root password for MySQL
+          value: root
+        - name: MAVENOPTIONS
+          description: Options to supply to mvn to build your project and test
+          value: -Dmaven.test.skip=true clean package
+      jenkinsfile: |-
+        pipeline {
+          agent none
+          stages {
+            stage("Build PetClinic") {
+              agent {label 'maven'}
+              stages {
+                stage("Clone Source") {
+                  steps {
+                    checkout([$class: 'GitSCM',
+                                branches: [[name: "*/${BRANCHAPI}"]],
+                                extensions: [
+                                  [$class: 'RelativeTargetDirectory', relativeTargetDir: 'petclinic']
+                                ],
+                                userRemoteConfigs: [[url: "${GITREPO}"]]
+                            ])
+                  }
+                }
+                stage("Build JAR") {
+                  steps {
+                    dir('petclinic') {
+                      sh 'mvn ${MAVENOPTIONS}'
+                    }
+                  }
+                }
+                stage("Create Build For Petclinic") {
+                  steps {
+                    dir('petclinic') {
+                      sh 'oc new-build --strategy docker --binary --name petclinic --dockerfile="Dockerfile-petclinic" || echo "Build already exists"'
+
+                      # Use this method below if you have a private Docker Registry
+                      # sh 'oc new-build --strategy docker --binary --name petclinic --to=${DOCKERREG} --to-docker || echo "Build already exists"'
+                      # sh "oc patch bc petclinic -p '{\"spec\":{\"output\": {\"to\": {\"kind\": \"DockerImage\", \"name\": \"${DOCKERREG}/${PROJECTNAME}/petclinic:${APIVERSION}\"}} }}'"
+                    }
+                  }
+                }
+                stage("Build PetClinic Image") {
+                  steps {
+                    dir('petclinic') {
+                      sh 'oc start-build petclinic --from-dir . --follow --wait=true || (echo "BUILD FAILED" && exit 1)'
+                    }
+                  }
+                }
+              }
+            }
+            stage("Build Database") {
+              agent {label 'maven'}
+              when {
+                environment name: 'BUILDDB', value: 'true'
+              }
+              stages {
+                stage("Clone Source") {
+                  steps {
+                    checkout([$class: 'GitSCM',
+                                branches: [[name: "*/${BRANCHDB}"]],
+                                extensions: [
+                                  [$class: 'RelativeTargetDirectory', relativeTargetDir: 'database']
+                                ],
+                                userRemoteConfigs: [[url: "${GITREPO}"]]
+                            ])
+                  }
+                }
+                stage("Create Build For Database Server") {
+                  steps {
+                    dir('database') {
+                      sh 'oc new-build --strategy docker --binary --name mysql --dockerfile="Dockerfile-mysql" || echo "Build already exists"'
+                    }
+                  }
+                }
+                stage("Build Database Image") {
+                  steps {
+                    dir('database') {
+                      sh 'oc start-build mysql --from-dir . --follow --wait=true'
+                    }
+                  }
+                }
+              }
+            }
+            stage("Test Application") {
+              agent {label 'maven'}
+              when {
+                not { environment name: 'GITREPOTEST', value: 'false' }
+              }
+              stages {
+                stage("Clone Source") {
+                  steps {
+                    checkout([$class: 'GitSCM',
+                                branches: [[name: "*/${BRANCHTEST}"]],
+                                extensions: [
+                                  [$class: 'RelativeTargetDirectory', relativeTargetDir: 'tests']
+                                ],
+                                userRemoteConfigs: [[url: "${GITREPO}"]]
+                            ])
+                  }
+                }
+                stage("Test environment") {
+                  steps {
+                    dir('tests') {
+                      sh 'echo "You should perform tests to make sure your application works"'
+                      sh 'echo "Something like a curl to a status port -  curl http://trades.dev2.conygre.com/trades/status"'
+                      sh 'echo "Or http://trades.dev2.conygre.com/trades/list"'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    type: JenkinsPipeline
+    triggers: {
+      pollSCM('H */2 * * 1-5')
+    }

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ImageStream
+metadata:
+  labels:
+    io.kompose.service: mysql
+  name: mysql
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+  - annotations:
+      openshift.io/display-name: MySQL Image Stream
+      description: >-
+        PetClinic MySQL server Image Stream.
+    from:
+      kind: DockerImage
+      name: petclinic/mysql:1.0.0
+    generation: null
+    importPolicy: {}
+    name: mysql:1.0.0
+status:
+  dockerImageRepository: ""
