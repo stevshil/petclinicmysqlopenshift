@@ -41,6 +41,6 @@ spec:
       - mysql
       from:
         kind: ImageStreamTag
-        name: petclinic/mysql:1.0.0
+        name: mysql:1.0.0
     type: ImageChange
 status: {}

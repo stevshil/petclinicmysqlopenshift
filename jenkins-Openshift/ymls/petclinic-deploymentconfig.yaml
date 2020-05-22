@@ -36,6 +36,6 @@ spec:
       - petclinic
       from:
         kind: ImageStreamTag
-        name: petclinic/petclinic:1.0.0
+        name: petclinic:1.0.0
     type: ImageChange
 status: {}
