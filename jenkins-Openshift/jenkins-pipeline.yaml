@@ -115,21 +115,6 @@ spec:
                 }
               }
             }
-            stage("Deploy Application") {
-              agent {label 'maven'}
-              stages {
-                stage("Deploy Database") {
-                  steps {
-                    sh 'oc deploy --latest dc/mysql || echo "Database already deployed"'
-                  }
-                }
-                stage("Deploy Petclinic") {
-                  steps {
-                    sh 'oc deploy --latest dc/petclinic || echo "Petclinic already deployed"'
-                  }
-                }
-              }
-            }
             stage("Test Application") {
               agent {label 'maven'}
               when {
