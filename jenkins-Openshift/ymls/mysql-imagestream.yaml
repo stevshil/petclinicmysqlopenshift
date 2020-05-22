@@ -14,7 +14,7 @@ spec:
         PetClinic MySQL server Image Stream.
     from:
       kind: DockerImage
-      name: petclinic/mysql:1.0.0
+      name: mysql:1.0.0
     generation: null
     importPolicy: {}
     name: mysql:1.0.0
