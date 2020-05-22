@@ -10,9 +10,9 @@ spec:
   - annotations: null
     from:
       kind: DockerImage
-      name: petclinic:1.0.0
+      name: petclinic
     generation: null
     importPolicy: {}
-    name: 1.0.0
+    name: latest
 status:
   dockerImageRepository: ""
